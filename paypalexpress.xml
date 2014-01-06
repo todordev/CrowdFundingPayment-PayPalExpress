@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="3.2" type="plugin" group="crowdfundingpayment" method="upgrade">
+    <name>PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS</name>
+    <author>Todor Iliev</author>
+    <copyright>Copyright (C) 2014 Todor Iliev ( ITPrism.com ). All rights reserved.</copyright>
+    <license>http://www.gnu.org/copyleft/gpl.html GNU/GPL</license>
+    <authorEmail>todor@itprism.com</authorEmail>
+    <authorUrl>http://itprism.com</authorUrl>
+    <version>1.0</version>
+    <creationDate>12 January, 2014</creationDate>
+    <description><![CDATA[
+    <p>CrowdFunding Payment - PayPal Express is a plugin that provides ability for making payments via PayPal Express method.</p>
+    <p><a href='http://itprism.com/' target='_blank'>Subscribe for the newsletter</a> to receive information about updates and new ITPrism extensions.</p>
+    <p>Please, <a href='http://extensions.joomla.org/extensions/e-commerce/donations/23876' target='_blank'>vote for the extension</a> on Joomla! Extensions Directory</p>
+    ]]></description>
+    
+    <help url="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_HELP_URL"/>
+    
+    <files>
+        <filename plugin="paypalexpress">paypalexpress.php</filename>
+        <filename>index.html</filename>
+        
+        <folder>images</folder>
+        <folder>language</folder>
+    </files>
+    
+    <config>
+		<fields name="params"  addfieldpath="/administrator/components/com_crowdfunding/models/fields">
+			<fieldset name="basic">
+                <field name="paypal_business_name" type="text" size="80" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_MERCHANT_ID" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_MERCHANT_ID_DESC" class="span6" />
+    	        <field name="paypal_api_username" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_API_USERNAME" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_API_USERNAME_DESC" class="span6" />
+    	        <field name="paypal_api_password" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_API_PASSWORD" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_API_PASSWORD_DESC" />
+    	        <field name="paypal_api_signature" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_API_SIGNATURE" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_API_SIGNATURE_DESC" size="80" class="span6"/>
+    	        <field name="paypal_url" type="text" default="https://www.paypal.com/webscr?cmd=_express-checkout&amp;useraction=commit" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_URL_DESC" size="80" class="span6" />
+    	        <field name="paypal_api_url" type="text" default="https://api-3t.paypal.com/nvp" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_API_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_API_URL_DESC" size="80" class="span6" />
+    	        <field name="paypal_return_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL_DESC" size="80" class="span6" />
+    	        <field name="paypal_cancel_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL_DESC" size="80" class="span6" />
+    	        <field name="paypal_notify_url" type="text" default="index.php?option=com_crowdfunding&amp;task=notifier.notify&amp;format=raw&amp;payment_service=PayPal" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL_DESC" size="80" class="span6" />
+    	        <field name="paypal_docheckout_url" type="text" default="index.php?option=com_crowdfunding&amp;task=payments.docheckout" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL_DESC" size="80" class="span6" />
+                <field name="paypal_country" type="cfcountries" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_COUNTRY" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_COUNTRY_DESC" />
+            </fieldset>
+            <fieldset name="sandbox" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX">
+                <field name="paypal_sandbox" type="radio" default="1" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_ENABLE_SANDBOX" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_DESC" class="btn-group">
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field name="paypal_sandbox_business_name" size="80" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_MERCHANT_ID" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_MERCHANT_ID_DESC" class="span6" />
+                <field name="paypal_sandbox_api_username" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_USERNAME" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_USERNAME_DESC" class="span6" />
+                <field name="paypal_sandbox_api_password" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_PASSWORD" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_PASSWORD_DESC" />
+                <field name="paypal_sandbox_api_signature" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_SIGNATURE" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_SIGNATURE_DESC" size="80" class="span6"/>
+                <field name="paypal_sandbox_url" type="text" default="https://www.sandbox.paypal.com/webscr?cmd=_express-checkout&amp;useraction=commit" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_URL_DESC" size="80" class="span6" />
+                <field name="paypal_sandbox_api_url" type="text" default="https://api-3t.sandbox.paypal.com/nvp" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SANDBOX_API_URL_DESC" size="80" class="span6" />
+            </fieldset>
+            
+            <fieldset name="emails" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFICATION_EMAILS">
+                <field name="admin_mail_id" type="cfemails" default="0" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SEND_MAIL_ADMIN" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SEND_MAIL_ADMIN_DESC" class="btn-group" />
+                <field name="creator_mail_id" type="cfemails" default="0" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SEND_MAIL_CREATOR" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SEND_MAIL_CREATOR_DESC" class="btn-group" />
+                <field name="user_mail_id" type="cfemails" default="0" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SEND_MAIL_USER" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_SEND_MAIL_USER_DESC" class="btn-group" />
+                
+                <field name="email_mode" type="list" default="html" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_EMAIL_MODE" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_EMAIL_MODE_DESC" >
+                   <option value="plain">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PLAIN</option>
+                   <option value="html">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_HTML</option>
+                </field>
+            </fieldset>
+            
+            <fieldset name="advanced" >
+                <field name="paypal_image_url" type="text" default="" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_IMAGE_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_IMAGE_URL_DESC" size="80" class="span6" />
+                <field name="paypal_button_type" type="list" default="html" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_BUTTON_TYPE" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_BUTTON_TYPE_DESC" >
+                   <option value="btn_buynow_LG">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_BUY_NOW</option>
+                   <option value="btn_buynowCC_LG">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_BUY_NOW_CC</option>
+                   <option value="btn_paynow_LG">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PAY_NOW</option>
+                   <option value="btn_paynowCC_LG">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PAY_NOW_CC</option>
+                   <option value="btn_donate_LG">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DONATE</option>
+                   <option value="btn_donateCC_LG">PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DONATE_CC</option>
+                </field>
+                <field name="paypal_button_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_BUTTON_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_BUTTON_URL_DESC" class="span6" size="80" />
+                <field name="paypal_load_certificate" type="radio" default="0" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_LOAD_CERTIFICATE" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_LOAD_CERTIFICATE_DESC" class="btn-group">
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+			</fieldset>
+	            
+        </fields>
+	</config>
+</extension>
