@@ -23,7 +23,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
     protected   $paymentService = "paypal";
     
     protected   $textPrefix   = "PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS";
-    protected   $debugType    = "PAYPAL_PAYMENT_PLUGIN_DEBUG";
+    protected   $debugType    = "PAYPALEXPRESS_PAYMENT_PLUGIN_DEBUG";
     
     /**
      * This method prepares a payment gateway - buttons, forms,...
@@ -110,6 +110,10 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         $cancelUrl = $this->getCancelUrl($item->slug, $item->catslug);
         $returnUrl = $this->getDoCheckoutUrl($item->id);
         
+        // DEBUG DATA
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_CANCEL_URL"), $this->debugType, $cancelUrl) : null;
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_RETURN_URL"), $this->debugType, $returnUrl) : null;
+        
         // Get country and locale code.
         jimport("crowdfunding.country");
         $countryId = $this->params->get("paypal_country");
@@ -174,12 +178,18 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
             $apiUrl =  JString::trim($this->params->get("paypal_sandbox_api_url"));
         }
         
+        // DEBUG DATA
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_EXPRESS_CHECKOUT_OPTIONS"), $this->debugType, $options->toArray()) : null;
+        
         jimport("itprism.payment.paypal.express");
         $express = new ITPrismPayPalExpress($apiUrl, $options);
         
         $express->setTransport($http);
         
         $response = $express->setExpressCheckout();
+        
+        // DEBUG DATA
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_EXPRESS_CHECKOUT_RESPONSE"), $this->debugType, $response) : null;
         
         $token    = JArrayHelper::getValue($response, "TOKEN");
         if(!$token) {
@@ -240,6 +250,10 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         $returnUrl  = $this->getReturnUrl($item->slug, $item->catslug);
         $notifyUrl  = $this->getNotifyUrl();
         
+        // DEBUG DATA
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_RETURN_URL"), $this->debugType, $returnUrl) : null;
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_NOTIFY_URL"), $this->debugType, $notifyUrl) : null;
+        
         // Create transport object.
         $options    = new JRegistry;
     
@@ -271,6 +285,9 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
             $apiUrl =  JString::trim($this->params->get("paypal_sandbox_api_url"));
         }
     
+        // DEBUG DATA
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_DOCHECKOUT_OPTIONS"), $this->debugType, $options) : null;
+        
         jimport("itprism.payment.paypal.express");
         $express = new ITPrismPayPalExpress($apiUrl, $options);
     
@@ -278,6 +295,9 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         
         $response = $express->doExpressCheckoutPayment();
 
+        // DEBUG DATA
+        JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_DOCHECKOUT_RESPONSE"), $this->debugType, $response) : null;
+        
         $output["redirect_url"] = $returnUrl;
         
         return $output;
@@ -286,14 +306,15 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
     
     public function onPaymentsCapture($context, &$item, $params) {
     
-        if(strcmp("com_crowdfunding.payments.capture.paypal", $context) != 0){
+        $allowedContext = array("com_crowdfunding.payments.capture.paypal","com_crowdfundingfinance.payments.capture.paypal");
+        if(!in_array($context, $allowedContext)){
             return;
         }
-    
+        
         $app = JFactory::getApplication();
-        /** @var $app JSite **/
+        /** @var $app JAdministrator **/
     
-        if($app->isAdmin()) {
+        if(!$app->isAdmin()) {
             return;
         }
     
@@ -307,11 +328,6 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         }
          
         $output     = array();
-        $token      = $app->input->get("token");
-        $payerId    = $app->input->get("PayerID");
-    
-        $returnUrl  = $this->getReturnUrl($item->slug, $item->catslug);
-        $notifyUrl  = $this->getNotifyUrl();
     
         // Create transport object.
         $options    = new JRegistry;
@@ -322,20 +338,16 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         // Create payment object.
         $options    = new JRegistry;
     
-        $options->set("urls.notify", $notifyUrl);
-    
         $options->set("api.version", 109);
     
         $options->set("credentials.username",  JString::trim($this->params->get("paypal_sandbox_api_username")));
         $options->set("credentials.password",  JString::trim($this->params->get("paypal_sandbox_api_password")));
         $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
     
-        $options->set("authorization.token",    $token);
-        $options->set("authorization.payer_id", $payerId);
-    
-        $options->set("payment.action",   "Order");
-        $options->set("payment.amount",   number_format($item->amount, 2));
-        $options->set("payment.currency", $item->currency);
+        $options->set("payment.authorization_id",   $item->txn_id);
+        $options->set("payment.amount",   $item->txn_amount);
+        $options->set("payment.currency", $item->txn_currency);
+        $options->set("payment.complete_type", "Complete");
     
         // Get API url.
         if(!$this->params->get("paypal_sandbox", 1)) {
@@ -344,16 +356,124 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
             $apiUrl =  JString::trim($this->params->get("paypal_sandbox_api_url"));
         }
     
-        jimport("itprism.payment.paypal.express");
-        $express = new ITPrismPayPalExpress($apiUrl, $options);
+        try {
+            
+            // DEBUG DATA
+            JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_DOCAPTURE_OPTIONS"), $this->debugType, $options) : null;
+            
+            jimport("itprism.payment.paypal.express");
+            $express = new ITPrismPayPalExpress($apiUrl, $options);
+        
+            $express->setTransport($http);
+        
+            $response = $express->doCapture();
+            
+            // DEBUG DATA
+            JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_DOCAPTURE_RESPONSE"), $this->debugType, $response) : null;
+            
+        } catch (Exception $e) {
+            
+            // DEBUG DATA
+            JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_ERROR_DOCAPTURE"), $this->debugType, $e->getMessage()) : null;
+            
+            $message = array(
+                "text" => JText::sprintf($this->textPrefix."_CAPTURED_UNSUCCESSFULLY", $item->txn_id),
+                "type" => "error"
+            );
+            return $message;
+            
+        }
+        
+        $message = array(
+            "text" => JText::sprintf($this->textPrefix."_CAPTURED_SUCCESSFULLY", $item->txn_id),
+            "type" => "message"
+        );
+        return $message;;
     
-        $express->setTransport($http);
+    }
     
-        $response = $express->doExpressCheckoutPayment();
+    public function onPaymentsVoid($context, &$item, $params) {
     
-        $output["redirect_url"] = $returnUrl;
+        $allowedContext = array("com_crowdfunding.payments.void.paypal","com_crowdfundingfinance.payments.void.paypal");
+        if(!in_array($context, $allowedContext)){
+            return;
+        }
     
-        return $output;
+        $app = JFactory::getApplication();
+        /** @var $app JAdministrator **/
+    
+        if(!$app->isAdmin()) {
+            return;
+        }
+    
+        $doc     = JFactory::getDocument();
+        /**  @var $doc JDocumentHtml **/
+    
+        // Check document type
+        $docType = $doc->getType();
+        if(strcmp("html", $docType) != 0){
+            return;
+        }
+         
+        $output     = array();
+    
+        // Create transport object.
+        $options    = new JRegistry;
+    
+        $transport  = new JHttpTransportCurl($options);
+        $http       = new JHttp($options, $transport);
+    
+        // Create payment object.
+        $options    = new JRegistry;
+    
+        $options->set("api.version", 109);
+    
+        $options->set("credentials.username",  JString::trim($this->params->get("paypal_sandbox_api_username")));
+        $options->set("credentials.password",  JString::trim($this->params->get("paypal_sandbox_api_password")));
+        $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
+    
+        $options->set("payment.authorization_id",   $item->txn_id);
+    
+        // Get API url.
+        if(!$this->params->get("paypal_sandbox", 1)) {
+            $apiUrl =  JString::trim($this->params->get("paypal_api_url"));
+        } else {
+            $apiUrl =  JString::trim($this->params->get("paypal_sandbox_api_url"));
+        }
+    
+        try {
+        
+            // DEBUG DATA
+            JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_DOVOID_OPTIONS"), $this->debugType, $options) : null;
+            
+            jimport("itprism.payment.paypal.express");
+            $express = new ITPrismPayPalExpress($apiUrl, $options);
+        
+            $express->setTransport($http);
+        
+            $response = $express->doVoid();
+        
+            // DEBUG DATA
+            JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_DOVOID_RESPONSE"), $this->debugType, $response) : null;
+        
+        } catch (Exception $e) {
+        
+            // DEBUG DATA
+            JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_ERROR_DOVOID"), $this->debugType, $e->getMessage()) : null;
+        
+            $message = array(
+                "text" => JText::sprintf($this->textPrefix."_VOID_UNSUCCESSFULLY", $item->txn_id),
+                "type" => "error"
+            );
+            return $message;
+        
+        }
+        
+        $message = array(
+            "text" => JText::sprintf($this->textPrefix."_VOID_SUCCESSFULLY", $item->txn_id),
+            "type" => "message"
+        );
+        return $message;
     
     }
     
@@ -600,17 +720,23 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         $txnDate = JArrayHelper::getValue($data, "payment_date");
         $date    = new JDate($txnDate);
         
+        // Get additional information from transaction.
+        $extraData = $this->getExtraData($data);
+        
         // Prepare transaction data
         $transaction = array(
             "investor_id"		     => (int)$intention->getUserId(),
             "project_id"		     => (int)$intention->getProjectId(),
             "reward_id"			     => ($intention->isAnonymous()) ? 0 : (int)$intention->getRewardId(),
         	"service_provider"       => "PayPal",
-        	"txn_id"                 => JArrayHelper::getValue($data, "txn_id", null, "string"),
-        	"txn_amount"		     => JArrayHelper::getValue($data, "mc_gross", null, "float"),
-            "txn_currency"           => JArrayHelper::getValue($data, "mc_currency", null, "string"),
-            "txn_status"             => JString::strtolower( JArrayHelper::getValue($data, "payment_status", null, "string") ),
+        	"txn_id"                 => JArrayHelper::getValue($data, "txn_id", "", "string"),
+        	"parent_txn_id"          => JArrayHelper::getValue($data, "parent_txn_id", "", "string"),
+        	"txn_amount"		     => JArrayHelper::getValue($data, "mc_gross", 0, "float"),
+            "txn_currency"           => JArrayHelper::getValue($data, "mc_currency", "", "string"),
+            "txn_status"             => JString::strtolower( JArrayHelper::getValue($data, "payment_status", "", "string") ),
             "txn_date"               => $date->toSql(),
+            "status_reason"          => $this->getStatusReason($data),
+            "extra_data"             => $extraData
         ); 
         
         
@@ -646,7 +772,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         $allowedReceivers = array(
             JString::strtolower(JArrayHelper::getValue($data, "business")),
             JString::strtolower(JArrayHelper::getValue($data, "receiver_email")),
-            JString::strtolower(JArrayHelper::getValue($data, "receiver_id"))
+            JArrayHelper::getValue($data, "receiver_id")
         );
         
         if($this->params->get("paypal_sandbox", 0)) {
@@ -681,12 +807,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
      */
     protected function storeTransaction($data, $project) {
         
-        // Get transaction by txn ID
-        jimport("crowdfunding.transaction");
-        $keys = array(
-            "txn_id" => JArrayHelper::getValue($data, "txn_id")
-        );
-        $transaction = new CrowdFundingTransaction($keys);
+        $transaction = $this->getTransaction($data);
         
         // DEBUG DATA
         JDEBUG ? $this->log->add(JText::_($this->textPrefix."_DEBUG_TRANSACTION_OBJECT"), $this->debugType, $transaction->getProperties()) : null;
@@ -700,33 +821,27 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
                 return false;
             } 
             
-            // Check for duplication of status pending.
             $txnStatus = JArrayHelper::getValue($data, "txn_status");
-            if($transaction->isPending() AND (strcmp("pending", $txnStatus) == 0)) {
-                return false;   
+            
+            switch($txnStatus) {
+                
+                case "completed":
+                    
+                    $result = (bool)$this->processCompleted($transaction, $project, $data);
+                    return $result;
+                    
+                    break;
+                    
+                case "voided":
+                    
+                    $result = (bool)$this->processVoided($transaction, $project, $data);
+                    return $result;
+                    
+                    break;
             }
             
-            // Set a flag that shows the project is NOT funded.
-            // If the status had not been completed or pending ( it might be failed, voided, created,...), 
-            // the project funds has not been increased. So, I will set this flag to how this below.
-            $projectFunded = true;
-            if(!$transaction->isCompleted() AND !$transaction->isPending()) {
-                $projectFunded = false;
-            }
-            
-            // Update the transaction data.
-            // If the currend status is pending and the new status is completed, 
-            // only store the transaction data, updating the status to completed.
-            $transaction->bind($data);
-            $transaction->store();
-            
-            if(!$projectFunded AND ($transaction->isCompleted() OR $transaction->isPending()) ) {
-                $amount = JArrayHelper::getValue($data, "txn_amount");
-                $project->addFunds($amount);
-                $project->store();
-            }
         
-        } else { // Create the new transaction data.
+        } else { // Create the new transaction data. 
 
             // Store the transaction data.
             $transaction->bind($data);
@@ -734,16 +849,111 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
             
             // Add funds to the project.
             if($transaction->isCompleted() OR $transaction->isPending()) {
-                
                 $amount = JArrayHelper::getValue($data, "txn_amount");
                 $project->addFunds($amount);
                 $project->store();
-                
             }
             
         }
         
         return true;
+    }
+    
+    protected function processCompleted(&$transaction, &$project, &$data) {
+        
+        // Set a flag that shows the project is NOT funded.
+        // If the status had not been completed or pending ( it might be failed, voided, created,...),
+        // the project funds has not been increased. So, I will set this flag to how this below.
+        $projectFunded = true;
+        if(!$transaction->isCompleted() AND !$transaction->isPending()) {
+            $projectFunded = false;
+        }
+        
+        // Merge existed extra data with the new one.
+        $this->mergeExtraData($transaction, $data);
+        
+        // Update the transaction data.
+        // If the currend status is pending and the new status is completed,
+        // only store the transaction data, updating the status to completed.
+        $transaction->bind($data);
+        $transaction->store();
+        
+        if(!$projectFunded AND ($transaction->isCompleted() OR $transaction->isPending()) ) {
+            $amount = JArrayHelper::getValue($data, "txn_amount");
+            $project->addFunds($amount);
+            $project->store();
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Merge previous extra data with the new one.
+     * 
+     * @param CrowdFundingTransaction $transaction
+     * @param array $data
+     */
+    protected function mergeExtraData(&$transaction, &$data) {
+        
+        $extraData = $transaction->getExtraData();
+        
+        if(!empty($extraData) AND is_array($data["extra_data"])) {
+            $data["extra_data"] = array_merge($extraData, $data["extra_data"]);
+        }
+        
+    }
+    
+    protected function processVoided(&$transaction, &$project, &$data) {
+    
+        $txnStatus = JArrayHelper::getValue($data, "txn_status");
+    
+        // It is possible only to void a transaction with status "pending".
+        if(!$transaction->isPending()) {
+            return false;
+        }
+        
+        // Merge existed extra data with the new one.
+        $this->mergeExtraData($transaction, $data);
+        
+        // Set transaction data to canceled.
+        $data["txn_status"] = "canceled";
+        
+        // Update the transaction data.
+        // If the currend status is pending and the new status is completed,
+        // only store the transaction data, updating the status to completed.
+        $transaction->bind($data);
+        $transaction->store();
+    
+        $amount = JArrayHelper::getValue($data, "txn_amount");
+        $project->removeFunds($amount);
+        $project->store();
+    
+        return true;
+    }
+    
+    /**
+     * Create and return transaction object.
+     * 
+     * @param array $data
+     */
+    protected function getTransaction($data) {
+        
+        // Prepare keys used for getting transaction from DB.
+        if(isset($data["parent_txn_id"])) {
+            $keys = array(
+                "txn_id" => JArrayHelper::getValue($data, "parent_txn_id")
+            );
+        } else {
+            $keys = array(
+                "txn_id" => JArrayHelper::getValue($data, "txn_id")
+            );
+        }
+        
+        // Get transaction by ID
+        jimport("crowdfunding.transaction");
+        $transaction = new CrowdFundingTransaction($keys);
+        
+        return $transaction;
     }
     
     protected function getDoCheckoutUrl($projectId) {
@@ -777,7 +987,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
             $page = JURI::root().$page;
         }
         
-        if(false == strpos("&payment_service=PayPal", $page)) {
+        if(false === strpos($page, "payment_service=PayPal")) {
             $page .= "&payment_service=PayPal";
         }
         
@@ -792,7 +1002,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
         
         $page = JString::trim($this->params->get('paypal_return_url'));
         if(!$page) {
-            $uri        = JURI::getInstance();
+            $uri  = JURI::getInstance();
             $page = $uri->toString(array("scheme", "host")).JRoute::_(CrowdFundingHelperRoute::getBackingRoute($slug, $catslug, "share"), false);
         } 
         
@@ -864,7 +1074,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
      * @param CrowdFundingIntention|CrowdFundingPaymentSession $intention
      * @param string $txnStatus
      */
-    public function removeIntention($intention, $txnStatus) {
+    protected function removeIntention($intention, $txnStatus) {
     
         // If status is NOT completed create a payment session.
         if(strcmp("completed", $txnStatus) != 0) {
@@ -903,5 +1113,35 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
             $intention->delete();
         }
         
+    }
+    
+    protected function getStatusReason($data) {
+        
+        $pendingReasion = JArrayHelper::getValue($data, "pending_reason");
+        if(!is_null($pendingReasion)) {
+            return $pendingReasion;
+        }
+        
+        return "";
+    }
+    
+    protected function getExtraData($data) {
+        
+        // Get transaction type.
+        $trackId = JArrayHelper::getValue($data, "ipn_track_id");
+        
+        $keys = array(
+            "payment_date", "parent_txn_id", "payment_status", "txn_type", "payment_type",
+            "pending_reason", "transaction_entity", "custom", "notify_version", "ipn_track_id"
+        );
+            
+        $extraData = array($trackId => array());
+        foreach($keys as $key) {
+            if(isset($data[$key])) {
+                $extraData[$trackId][$key] = $data[$key];
+            }
+        }
+        
+        return $extraData;
     }
 }
