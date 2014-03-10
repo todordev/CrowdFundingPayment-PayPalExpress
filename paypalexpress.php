@@ -1048,22 +1048,32 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin {
     
         $code   = $country->getCode();
         $code4  = $country->getCode4();
-    
+        
         $button     = $this->params->get("paypal_button_type", "btn_buynow_LG");
         $buttonUrl  = $this->params->get("paypal_button_url");
-    
-        if(!$buttonUrl) {
-    
-            if(strcmp("US", $code) == 0) {
-                $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/'.$code4.'/i/btn/'.$button.'.gif" alt="'.JText::_($this->textPrefix."_BUTTON_ALT").'">';
+        
+        // Generate a button
+        if(!$this->params->get("paypal_button_default", 0)) {
+            
+            if(!$buttonUrl) {
+        
+                if(strcmp("US", $code) == 0) {
+                    $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/'.$code4.'/i/btn/'.$button.'.gif" alt="'.JText::_($this->textPrefix."_BUTTON_ALT").'">';
+                } else {
+                    $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/'.$code4.'/'.$code.'/i/btn/'.$button.'.gif" alt="'.JText::_($this->textPrefix."_BUTTON_ALT").'">';
+                }
+        
             } else {
-                $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/'.$code4.'/'.$code.'/i/btn/'.$button.'.gif" alt="'.JText::_($this->textPrefix."_BUTTON_ALT").'">';
+                $html[] = '<input type="image" name="submit" border="0" src="'.$buttonUrl.'" alt="'.JText::_($this->textPrefix."_BUTTON_ALT").'">';
             }
-    
-        } else {
-            $html[] = '<input type="image" name="submit" border="0" src="'.$buttonUrl.'" alt="'.JText::_($this->textPrefix."_BUTTON_ALT").'">';
+            
+        } else { // Default button
+            
+            $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/en_US/i/btn/'.$button.'.gif" alt="'.JText::_($this->textPrefix."_BUTTON_ALT").'">';
+            
         }
-    
+        
+        // Set locale
         $html[] = '<input type="hidden" name="lc" value="'.$code.'" />';
     
     }
