@@ -146,11 +146,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $options->set("urls.return", $returnUrl);
         $options->set("urls.cancel", $cancelUrl);
 
-        $options->set("api.version", 109);
-
-        $options->set("credentials.username", JString::trim($this->params->get("paypal_sandbox_api_username")));
-        $options->set("credentials.password", JString::trim($this->params->get("paypal_sandbox_api_password")));
-        $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
+        $this->prepareCredentials($options);
 
         $options->set("locale.code", $localeCode);
 
@@ -164,7 +160,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $options->set("payment.description", $title);
 
         // Get intention.
-        $userId  = JFactory::getUser()->id;
+        $userId  = JFactory::getUser()->get("id");
         $aUserId = $app->getUserState("auser_id");
 
         $intention = $this->getIntention(array(
@@ -183,11 +179,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $options->set("payment.custom", $custom);
 
         // Get API url.
-        if (!$this->params->get("paypal_sandbox", 1)) {
-            $apiUrl = JString::trim($this->params->get("paypal_api_url"));
-        } else {
-            $apiUrl = JString::trim($this->params->get("paypal_sandbox_api_url"));
-        }
+        $apiUrl = $this->getApiUrl();
 
         // DEBUG DATA
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_EXPRESS_CHECKOUT_OPTIONS"), $this->debugType, $options->toArray()) : null;
@@ -208,14 +200,14 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         }
 
         // Store token to the intention.
-        $intention->setToken($token);
+        $intention->setUniqueKey($token);
         $intention->store();
 
-        // Get paypal checkout URL.
-        if (!$this->params->get('paypal_sandbox', 1)) {
-            $output["redirect_url"] = $this->params->get("paypal_url") . "&token=" . rawurlencode($token);
+        // Get PayPal checkout URL.
+        if ($this->params->get('paypal_sandbox', 1)) {
+            $output["redirect_url"] = $this->params->get("paypal_sandbox_url", "https://www.sandbox.paypal.com/cgi-bin/webscr") . "?cmd=_express-checkout&amp;useraction=commit&token=" . rawurlencode($token);
         } else {
-            $output["redirect_url"] = $this->params->get("paypal_sandbox_url") . "&token=" . rawurlencode($token);
+            $output["redirect_url"] = $this->params->get("paypal_url", "https://www.paypal.com/cgi-bin/webscr") . "?cmd=_express-checkout&amp;useraction=commit&token=" . rawurlencode($token);
         }
 
         return $output;
@@ -258,7 +250,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
         // Load intention by token.
         $intention = $this->getIntention(array(
-            "token" => $token
+            "unique_key" => $token
         ));
 
         // Validate project ID and transaction.
@@ -286,11 +278,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
         $options->set("urls.notify", $notifyUrl);
 
-        $options->set("api.version", 109);
-
-        $options->set("credentials.username", JString::trim($this->params->get("paypal_sandbox_api_username")));
-        $options->set("credentials.password", JString::trim($this->params->get("paypal_sandbox_api_password")));
-        $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
+        $this->prepareCredentials($options);
 
         $options->set("authorization.token", $token);
         $options->set("authorization.payer_id", $payerId);
@@ -300,11 +288,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $options->set("payment.currency", $item->currency);
 
         // Get API url.
-        if (!$this->params->get("paypal_sandbox", 1)) {
-            $apiUrl = JString::trim($this->params->get("paypal_api_url"));
-        } else {
-            $apiUrl = JString::trim($this->params->get("paypal_sandbox_api_url"));
-        }
+        $apiUrl = $this->getApiUrl();
 
         // DEBUG DATA
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_DOCHECKOUT_OPTIONS"), $this->debugType, $options) : null;
@@ -367,23 +351,15 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $options = new JRegistry;
         /** @var  $options Joomla\Registry\Registry */
 
-        $options->set("api.version", 109);
-
-        $options->set("credentials.username", JString::trim($this->params->get("paypal_sandbox_api_username")));
-        $options->set("credentials.password", JString::trim($this->params->get("paypal_sandbox_api_password")));
-        $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
+        $this->prepareCredentials($options);
 
         $options->set("payment.authorization_id", $item->txn_id);
-        $options->set("payment.amount", $item->txn_amount);
+        $options->set("payment.amount", number_format($item->txn_amount, 2));
         $options->set("payment.currency", $item->txn_currency);
         $options->set("payment.complete_type", "Complete");
 
         // Get API url.
-        if (!$this->params->get("paypal_sandbox", 1)) {
-            $apiUrl = JString::trim($this->params->get("paypal_api_url"));
-        } else {
-            $apiUrl = JString::trim($this->params->get("paypal_sandbox_api_url"));
-        }
+        $apiUrl = $this->getApiUrl();
 
         try {
 
@@ -465,20 +441,12 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $options = new JRegistry;
         /** @var  $options Joomla\Registry\Registry */
 
-        $options->set("api.version", 109);
-
-        $options->set("credentials.username", JString::trim($this->params->get("paypal_sandbox_api_username")));
-        $options->set("credentials.password", JString::trim($this->params->get("paypal_sandbox_api_password")));
-        $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
+        $this->prepareCredentials($options);
 
         $options->set("payment.authorization_id", $item->txn_id);
 
         // Get API url.
-        if (!$this->params->get("paypal_sandbox", 1)) {
-            $apiUrl = JString::trim($this->params->get("paypal_api_url"));
-        } else {
-            $apiUrl = JString::trim($this->params->get("paypal_sandbox_api_url"));
-        }
+        $apiUrl = $this->getApiUrl();
 
         try {
 
@@ -525,7 +493,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
      *
      * @return null|array
      */
-    public function onPaymenNotify($context, &$params)
+    public function onPaymentNotify($context, &$params)
     {
         if (strcmp("com_crowdfunding.notify.paypal", $context) != 0) {
             return null;
@@ -581,11 +549,10 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         }
 
         // Get PayPal URL
-        $sandbox = $this->params->get('paypal_sandbox', 0);
-        if (!$sandbox) {
-            $url = "https://www.paypal.com/cgi-bin/webscr";
+        if ($this->params->get('paypal_sandbox', 1)) {
+            $url = JString::trim($this->params->get('paypal_sandbox_url', "https://www.sandbox.paypal.com/cgi-bin/webscr"));
         } else {
-            $url = "https://www.sandbox.paypal.com/cgi-bin/webscr";
+            $url = JString::trim($this->params->get('paypal_url', "https://www.paypal.com/cgi-bin/webscr"));
         }
 
         jimport("itprism.payment.paypal.ipn");
@@ -601,6 +568,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             "project"         => null,
             "reward"          => null,
             "transaction"     => null,
+            "payment_session" => null,
             "payment_service" => "PayPal"
         );
 
@@ -620,13 +588,12 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
             // Get payment session as intention.
             if (!$intention->getId()) {
+
+                $keys = array("intention_id" => $intentionId);
+
                 jimport("crowdfunding.payment.session");
-                $keys      = array(
-                    "intention_id" => $intentionId
-                );
                 $intention = new CrowdFundingPaymentSession(JFactory::getDbo());
                 $intention->load($keys);
-
             }
 
             // DEBUG DATA
@@ -700,6 +667,10 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
                 $result["reward"] = JArrayHelper::toObject($properties);
             }
 
+            // Generate data object, based on the intention properties.
+            $properties       = $intention->getProperties();
+            $result["payment_session"] = JArrayHelper::toObject($properties);
+
             // DEBUG DATA
             JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_RESULT_DATA"), $this->debugType, $result) : null;
 
@@ -731,10 +702,11 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
      * @param Joomla\Registry\Registry $params Component parameters
      * @param object $project Project data
      * @param object $reward Reward data
+     * @param object $paymentSession Payment session data.
      *
      * @return void
      */
-    public function onAfterPayment($context, &$transaction, &$params, &$project, &$reward)
+    public function onAfterPayment($context, &$transaction, &$params, &$project, &$reward, &$paymentSession)
     {
         if (strcmp("com_crowdfunding.notify.paypal", $context) != 0) {
             return;
@@ -829,7 +801,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             JString::strtolower(JArrayHelper::getValue($data, "receiver_id"))
         );
 
-        if ($this->params->get("paypal_sandbox", 0)) {
+        if ($this->params->get("paypal_sandbox", 1)) {
             $receiver = JString::strtolower(JString::trim($this->params->get("paypal_sandbox_business_name")));
         } else {
             $receiver = JString::strtolower(JString::trim($this->params->get("paypal_business_name")));
@@ -841,7 +813,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             $this->log->add(
                 JText::_($this->textPrefix . "_ERROR_INVALID_RECEIVER"),
                 $this->debugType,
-                array("TRANSACTION DATA" => $data, "RECEIVER DATA" => $allowedReceivers)
+                array("TRANSACTION DATA" => $data, "RECEIVER" => $receiver, "RECEIVER DATA" => $allowedReceivers)
             );
 
             return null;
@@ -947,22 +919,6 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
     }
 
     /**
-     * Merge previous extra data with the new one.
-     *
-     * @param CrowdFundingTransaction $transaction
-     * @param array                   $data
-     */
-    protected function mergeExtraData(&$transaction, &$data)
-    {
-        $extraData = $transaction->getExtraData();
-
-        if (!empty($extraData) and is_array($data["extra_data"])) {
-            $data["extra_data"] = array_merge($extraData, $data["extra_data"]);
-        }
-
-    }
-
-    /**
      * @param CrowdFundingTransaction $transaction
      * @param CrowdFundingProject $project
      * @param array $data
@@ -1031,7 +987,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $domain = $uri->toString(array("host"));
 
         if (false == strpos($page, $domain)) {
-            $page = JURI::root() . $page;
+            $page = JUri::root() . $page;
         }
 
         $page .= "&pid=" . (int)$projectId;
@@ -1050,7 +1006,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $domain = $uri->toString(array("host"));
 
         if (false == strpos($page, $domain)) {
-            $page = JURI::root() . $page;
+            $page = JUri::root() . $page;
         }
 
         if (false === strpos($page, "payment_service=PayPal")) {
@@ -1081,7 +1037,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
     {
         $page = JString::trim($this->params->get('paypal_cancel_url'));
         if (!$page) {
-            $uri  = JURI::getInstance();
+            $uri  = JUri::getInstance();
             $page = $uri->toString(array("scheme", "host")) . JRoute::_(CrowdFundingHelperRoute::getBackingRoute($slug, $catslug, "default"), false);
         }
 
@@ -1155,7 +1111,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
             // If intention object is instance of CrowdFundingIntention,
             // create a payment session record and remove intention record.
-            // If it is NOT instance of CrowdFundingIntention, do NOT remove the recrod,
+            // If it is NOT instance of CrowdFundingIntention, do NOT remove the record,
             // because it will be used again when PayPal sends a response with status "completed".
             if ($intention instanceof CrowdFundingIntention) {
 
@@ -1167,10 +1123,11 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
                     ->setProjectId($intention->getProjectId())
                     ->setRewardId($intention->getRewardId())
                     ->setRecordDate($intention->getRecordDate())
-                    ->setTransactionId($intention->getTransactionId())
                     ->setGateway($intention->getGateway())
+                    ->setGatewayData($intention->getGatewayData())
                     ->setIntentionId($intention->getId())
-                    ->setToken($intention->getToken());
+                    ->setUniqueKey($intention->getUniqueKey())
+                    ->setSessionId($intention->getSessionId());
 
                 $paymentSession->store();
 
@@ -1180,7 +1137,6 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
                 // Remove intention object.
                 $intention->delete();
             }
-
 
             // If transaction status is completed, remove intention record.
         } elseif (strcmp("completed", $txnStatus) == 0) {
@@ -1217,5 +1173,39 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         }
 
         return $extraData;
+    }
+
+    /**
+     * Prepare credentials for sandbox or for the live server.
+     *
+     * @param Joomla\Registry\Registry $options
+     */
+    protected function prepareCredentials(&$options)
+    {
+        $options->set("api.version", 109);
+
+        if ($this->params->get("paypal_sandbox", 1)) {
+            $options->set("credentials.username", JString::trim($this->params->get("paypal_sandbox_api_username")));
+            $options->set("credentials.password", JString::trim($this->params->get("paypal_sandbox_api_password")));
+            $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
+        } else {
+            $options->set("credentials.username", JString::trim($this->params->get("paypal_api_username")));
+            $options->set("credentials.password", JString::trim($this->params->get("paypal_api_password")));
+            $options->set("credentials.signature", JString::trim($this->params->get("paypal_api_signature")));
+        }
+    }
+
+    /**
+     * Return PayPal API URL.
+     *
+     * @return string
+     */
+    protected function getApiUrl()
+    {
+        if ($this->params->get("paypal_sandbox", 1)) {
+            return JString::trim($this->params->get("paypal_sandbox_api_url"));
+        } else {
+            return JString::trim($this->params->get("paypal_api_url"));
+        }
     }
 }
