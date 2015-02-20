@@ -2,25 +2,24 @@
 <extension version="3.3" type="plugin" group="crowdfundingpayment" method="upgrade">
     <name>PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS</name>
     <author>Todor Iliev</author>
-    <copyright>Copyright (C) 2014 Todor Iliev ( ITPrism.com ). All rights reserved.</copyright>
+    <copyright>Copyright (C) 2015 Todor Iliev ( ITPrism.com ). All rights reserved.</copyright>
     <license>http://www.gnu.org/copyleft/gpl.html GNU/GPL</license>
     <authorEmail>todor@itprism.com</authorEmail>
     <authorUrl>http://itprism.com</authorUrl>
-    <version>1.3</version>
-    <creationDate>16 November, 2014</creationDate>
+    <version>1.4</version>
+    <creationDate>20 February, 2015</creationDate>
     <description><![CDATA[
     <p>CrowdFunding Payment - PayPal Express is a plugin that provides ability for making payments via PayPal Express method.</p>
     <p>Invest in the extension and help for its improvement. You can <a href="http://itprism.com/sponsorship" target="_blank">sponsor the extension via SMS, PayPal or Bitcoin</a>.</p>
     <p><a href='http://itprism.com/' target='_blank'>Subscribe for the newsletter</a> to receive information about updates and new ITPrism extensions.</p>
-    <p>Please, <a href='http://extensions.joomla.org/extensions/e-commerce/donations/23876' target='_blank'>vote for the extension</a> on Joomla! Extensions Directory</p>
+    <p>Please, <a href='http://extensions.joomla.org/extensions/extension/e-commerce/donations/crowdfunding' target='_blank'>vote for the extension</a> on Joomla! Extensions Directory</p>
     ]]></description>
     
     <help url="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_HELP_URL"/>
     
     <files>
         <filename plugin="paypalexpress">paypalexpress.php</filename>
-        <filename>index.html</filename>
-        
+
         <folder>images</folder>
         <folder>language</folder>
     </files>
@@ -61,10 +60,10 @@
             <fieldset name="advanced" >
                 <field name="paypal_url" type="text" default="https://www.paypal.com/cgi-bin/webscr" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_URL_DESC" size="80" class="span6" />
                 <field name="paypal_api_url" type="text" default="https://api-3t.paypal.com/nvp" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_API_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_API_URL_DESC" size="80" class="span6" />
-                <field name="paypal_return_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL_DESC" size="80" class="span6" />
-                <field name="paypal_cancel_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL_DESC" size="80" class="span6" />
-                <field name="paypal_notify_url" type="text" default="index.php?option=com_crowdfunding&amp;task=notifier.notify&amp;format=raw&amp;payment_service=PayPal" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL_DESC" size="80" class="span6" />
-                <field name="paypal_docheckout_url" type="text" default="index.php?option=com_crowdfunding&amp;task=payments.docheckout" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL_DESC" size="80" class="span6" />
+                <field name="return_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL_DESC" size="80" class="span6" />
+                <field name="cancel_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL_DESC" size="80" class="span6" />
+                <field name="callback_url" type="text" default="index.php?option=com_crowdfunding&amp;task=notifier.notify&amp;format=raw&amp;payment_service=PayPal" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL_DESC" size="80" class="span6" />
+                <field name="docheckout_url" type="text" default="index.php?option=com_crowdfunding&amp;task=payments.docheckout" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL_DESC" size="80" class="span6" />
                 <field name="paypal_image_url" type="text" default="" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_LOGO_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_LOGO_URL_DESC" size="80" class="span6" />
                 <field name="paypal_button_default" type="radio" default="0" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DEFAULT_BUTTON" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DEFAULT_BUTTON_DESC" class="btn-group">
                     <option value="0">JNO</option>
