@@ -1,9 +1,9 @@
-CrowdFunding Payment - PayPal Express
+Crowdfunding Payment - PayPal Express
 ==========================
-( Version 1.4 )
+( Version 2.0 )
 - - -
 
-This is a payment plugin for CrowdFunding platform, which provides an ability to make payments via PayPal Express.
+This is a payment plugin for Crowdfunding platform, which provides an ability to make payments via PayPal Express.
 
 Changelog
 ---------

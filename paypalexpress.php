@@ -1,6 +1,6 @@
 <?php
 /**
- * @package      CrowdFunding
+ * @package      Crowdfunding
  * @subpackage   Plugins
  * @author       Todor Iliev
  * @copyright    Copyright (C) 2015 Todor Iliev <todor@itprism.com>. All rights reserved.
@@ -10,15 +10,17 @@
 // no direct access
 defined('_JEXEC') or die;
 
-jimport('crowdfunding.payment.plugin');
+jimport("Prism.init");
+jimport("Crowdfunding.init");
+jimport("EmailTemplates.init");
 
 /**
- * CrowdFunding PayPal Express payment plugin.
+ * Crowdfunding PayPal Express payment plugin.
  *
- * @package      CrowdFunding
+ * @package      Crowdfunding
  * @subpackage   Plugins
  */
-class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
+class plgCrowdfundingPaymentPayPalExpress extends Crowdfunding\Payment\Plugin
 {
     protected $paymentService = "paypal";
 
@@ -71,8 +73,6 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $html[] = '<div class="well">'; // Open "well".
 
         $html[] = '<h4><img src="' . $pluginURI . '/images/paypal_icon.png" width="36" height="32" alt="PayPal" />' . JText::_($this->textPrefix . "_TITLE") . '</h4>';
-        $html[] = '<p>' . JText::_($this->textPrefix . "_INFO") . '</p>';
-        $html[] = '<div class="clearfix"> </div>';
 
         $html[] = '<form action="' . JRoute::_("index.php?option=com_crowdfunding&task=payments.checkout") . '" method="post">';
 
@@ -82,11 +82,13 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
         $this->prepareLocale($html);
 
-        $html[] = '<img alt="" border="0" width="1" height="1" src="https://www.paypal.com/en_US/i/scr/pixel.gif" >';
+        $html[] = '<img alt="" border="0" width="1" height="1" src="https://www.paypal.com/en_US/i/scr/pixel.gif" />';
         $html[] = '</form>';
 
+        $html[] = '<p class="bg-info p-10-5"><span class="glyphicon glyphicon-info-sign"></span> ' . JText::_($this->textPrefix . "_INFO") . '</p>';
+
         if ($this->params->get('paypal_sandbox', 1)) {
-            $html[] = '<div class="alert alert-info"><i class="icon-info-sign"></i> ' . JText::_($this->textPrefix . "_WORKS_SANDBOX") . '</div>';
+            $html[] = '<div class="bg-info p-10-5"><span class="glyphicon glyphicon-info-sign"></span> ' . JText::_($this->textPrefix . "_WORKS_SANDBOX") . '</div>';
         }
 
         $html[] = '</div>'; // Close "well".
@@ -132,23 +134,22 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_RETURN_URL"), $this->debugType, $returnUrl) : null;
 
         // Get country and locale code.
-        jimport("crowdfunding.country");
         $countryId = $this->params->get("paypal_country");
 
-        $country = new CrowdFundingCountry(JFactory::getDbo());
+        $country = new Crowdfunding\Country(JFactory::getDbo());
         $country->load($countryId);
 
         $localeCode = $country->getCode4();
 
         // Create transport object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $transport = new JHttpTransportCurl($options);
         $http      = new JHttp($options, $transport);
 
         // Create payment object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $options->set("urls.return", $returnUrl);
@@ -158,7 +159,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
         $options->set("locale.code", $localeCode);
 
-        $options->set("style.logo_image", JString::trim($this->params->get("paypal_image_url")));
+        $options->set("style.logo_image", Joomla\String\String::trim($this->params->get("paypal_image_url")));
 
         $options->set("payment.action", "Order");
         $options->set("payment.amount", $item->amount);
@@ -167,19 +168,17 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $title = JText::sprintf($this->textPrefix . "_INVESTING_IN_S", htmlentities($item->title, ENT_QUOTES, "UTF-8"));
         $options->set("payment.description", $title);
 
-        // Get intention.
-        $userId  = JFactory::getUser()->get("id");
-        $aUserId = $this->app->getUserState("auser_id");
+        // Get payment session.
+        $paymentSessionContext    = Crowdfunding\Constants::PAYMENT_SESSION_CONTEXT . $item->id;
+        $paymentSessionLocal      = $this->app->getUserState($paymentSessionContext);
 
-        $intention = $this->getIntention(array(
-            "user_id"    => $userId,
-            "auser_id"   => $aUserId,
-            "project_id" => $item->id
+        $paymentSession = $this->getPaymentSession(array(
+            "session_id"    => $paymentSessionLocal->session_id
         ));
 
         // Prepare custom data
         $custom = array(
-            "intention_id" => $intention->getId(),
+            "payment_session_id" => $paymentSession->getId(),
             "gateway"      => "PayPal"
         );
 
@@ -192,8 +191,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         // DEBUG DATA
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_EXPRESS_CHECKOUT_OPTIONS"), $this->debugType, $options->toArray()) : null;
 
-        jimport("itprism.payment.paypal.express");
-        $express = new ITPrismPayPalExpress($apiUrl, $options);
+        $express = new Prism\Payment\PayPal\Express($apiUrl, $options);
 
         $express->setTransport($http);
 
@@ -202,14 +200,14 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         // DEBUG DATA
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_EXPRESS_CHECKOUT_RESPONSE"), $this->debugType, $response) : null;
 
-        $token = JArrayHelper::getValue($response, "TOKEN");
+        $token = Joomla\Utilities\ArrayHelper::getValue($response, "TOKEN");
         if (!$token) {
             return null;
         }
 
-        // Store token to the intention.
-        $intention->setUniqueKey($token);
-        $intention->store();
+        // Store token to the payment session.
+        $paymentSession->setUniqueKey($token);
+        $paymentSession->storeUniqueKey();
 
         // Get PayPal checkout URL.
         if ($this->params->get('paypal_sandbox', 1)) {
@@ -253,13 +251,13 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $token   = $this->app->input->get("token");
         $payerId = $this->app->input->get("PayerID");
 
-        // Load intention by token.
-        $intention = $this->getIntention(array(
+        // Load payment session by token.
+        $paymentSession = $this->getPaymentSession(array(
             "unique_key" => $token
         ));
 
         // Validate project ID and transaction.
-        if ($item->id != $intention->getProjectId()) {
+        if ($item->id != $paymentSession->getProjectId()) {
             return null;
         }
 
@@ -271,14 +269,14 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_RETURN_URL"), $this->debugType, $returnUrl) : null;
 
         // Create transport object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $transport = new JHttpTransportCurl($options);
         $http      = new JHttp($options, $transport);
 
         // Create payment object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $options->set("urls.notify", $notifyUrl);
@@ -298,8 +296,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         // DEBUG DATA
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_DOCHECKOUT_OPTIONS"), $this->debugType, $options) : null;
 
-        jimport("itprism.payment.paypal.express");
-        $express = new ITPrismPayPalExpress($apiUrl, $options);
+        $express = new Prism\Payment\PayPal\Express($apiUrl, $options);
 
         $express->setTransport($http);
 
@@ -343,14 +340,14 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         }
 
         // Create transport object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $transport = new JHttpTransportCurl($options);
         $http      = new JHttp($options, $transport);
 
         // Create payment object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $this->prepareCredentials($options);
@@ -368,8 +365,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             // DEBUG DATA
             JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_DOCAPTURE_OPTIONS"), $this->debugType, $options) : null;
 
-            jimport("itprism.payment.paypal.express");
-            $express = new ITPrismPayPalExpress($apiUrl, $options);
+            $express = new Prism\Payment\PayPal\Express($apiUrl, $options);
 
             $express->setTransport($http);
 
@@ -430,14 +426,14 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         }
 
         // Create transport object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $transport = new JHttpTransportCurl($options);
         $http      = new JHttp($options, $transport);
 
         // Create payment object.
-        $options = new JRegistry;
+        $options = new Joomla\Registry\Registry;
         /** @var  $options Joomla\Registry\Registry */
 
         $this->prepareCredentials($options);
@@ -452,8 +448,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             // DEBUG DATA
             JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_DOVOID_OPTIONS"), $this->debugType, $options) : null;
 
-            jimport("itprism.payment.paypal.express");
-            $express = new ITPrismPayPalExpress($apiUrl, $options);
+            $express = new Prism\Payment\PayPal\Express($apiUrl, $options);
 
             $express->setTransport($http);
 
@@ -527,14 +522,14 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_RESPONSE"), $this->debugType, $_POST) : null;
 
         // Decode custom data
-        $custom = JArrayHelper::getValue($_POST, "custom");
+        $custom = Joomla\Utilities\ArrayHelper::getValue($_POST, "custom");
         $custom = json_decode(base64_decode($custom), true);
 
         // DEBUG DATA
         JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_CUSTOM"), $this->debugType, $custom) : null;
 
         // Validate payment services.
-        $gateway = JArrayHelper::getValue($custom, "gateway");
+        $gateway = Joomla\Utilities\ArrayHelper::getValue($custom, "gateway");
         if (!$this->isValidPaymentGateway($gateway)) {
             $this->log->add(
                 JText::_($this->textPrefix . "_ERROR_INVALID_PAYMENT_GATEWAY"),
@@ -547,13 +542,12 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
         // Get PayPal URL
         if ($this->params->get('paypal_sandbox', 1)) {
-            $url = JString::trim($this->params->get('paypal_sandbox_url', "https://www.sandbox.paypal.com/cgi-bin/webscr"));
+            $url = Joomla\String\String::trim($this->params->get('paypal_sandbox_url', "https://www.sandbox.paypal.com/cgi-bin/webscr"));
         } else {
-            $url = JString::trim($this->params->get('paypal_url', "https://www.paypal.com/cgi-bin/webscr"));
+            $url = Joomla\String\String::trim($this->params->get('paypal_url', "https://www.paypal.com/cgi-bin/webscr"));
         }
 
-        jimport("itprism.payment.paypal.ipn");
-        $paypalIPN       = new ITPrismPayPalIpn($url, $_POST);
+        $paypalIPN       = new Prism\Payment\PayPal\Ipn($url, $_POST);
         $loadCertificate = (bool)$this->params->get("paypal_load_certificate", 0);
         $paypalIPN->verify($loadCertificate);
 
@@ -572,32 +566,18 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         if ($paypalIPN->isVerified()) {
 
             // Get currency
-            jimport("crowdfunding.currency");
             $currencyId = $params->get("project_currency");
-            $currency   = CrowdFundingCurrency::getInstance(JFactory::getDbo(), $currencyId, $params);
+            $currency   = Crowdfunding\Currency::getInstance(JFactory::getDbo(), $currencyId, $params);
 
-            // Get intention data
-            $intentionId = JArrayHelper::getValue($custom, "intention_id", 0, "int");
-
-            jimport("crowdfunding.intention");
-            $intention = new CrowdFundingIntention(JFactory::getDbo());
-            $intention->load($intentionId);
-
-            // Get payment session as intention.
-            if (!$intention->getId()) {
-
-                $keys = array("intention_id" => $intentionId);
-
-                jimport("crowdfunding.payment.session");
-                $intention = new CrowdFundingPaymentSession(JFactory::getDbo());
-                $intention->load($keys);
-            }
+            // Get payment session data
+            $paymentSessionId = Joomla\Utilities\ArrayHelper::getValue($custom, "payment_session_id", 0, "int");
+            $paymentSession = $this->getPaymentSession(array("id" => $paymentSessionId));
 
             // DEBUG DATA
-            JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_INTENTION"), $this->debugType, $intention->getProperties()) : null;
+            JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_PAYMENT_SESSION"), $this->debugType, $paymentSession->getProperties()) : null;
 
             // Validate transaction data
-            $validData = $this->validateData($_POST, $currency->getAbbr(), $intention);
+            $validData = $this->validateData($_POST, $currency->getCode(), $paymentSession);
             if (is_null($validData)) {
                 return $result;
             }
@@ -606,9 +586,8 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_VALID_DATA"), $this->debugType, $validData) : null;
 
             // Get project.
-            jimport("crowdfunding.project");
-            $projectId = JArrayHelper::getValue($validData, "project_id");
-            $project   = CrowdFundingProject::getInstance(JFactory::getDbo(), $projectId);
+            $projectId = Joomla\Utilities\ArrayHelper::getValue($validData, "project_id");
+            $project   = Crowdfunding\Project::getInstance(JFactory::getDbo(), $projectId);
 
             // DEBUG DATA
             JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_PROJECT_OBJECT"), $this->debugType, $project->getProperties()) : null;
@@ -638,7 +617,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             }
 
             // Update the number of distributed reward.
-            $rewardId = JArrayHelper::getValue($transactionData, "reward_id");
+            $rewardId = Joomla\Utilities\ArrayHelper::getValue($transactionData, "reward_id");
             $reward   = null;
             if (!empty($rewardId)) {
                 $reward = $this->updateReward($transactionData);
@@ -652,29 +631,28 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
             //  Prepare the data that will be returned
 
-            $result["transaction"] = JArrayHelper::toObject($transactionData);
+            $result["transaction"] = Joomla\Utilities\ArrayHelper::toObject($transactionData);
 
             // Generate object of data based on the project properties
             $properties        = $project->getProperties();
-            $result["project"] = JArrayHelper::toObject($properties);
+            $result["project"] = Joomla\Utilities\ArrayHelper::toObject($properties);
 
             // Generate object of data based on the reward properties
             if (!empty($reward)) {
                 $properties       = $reward->getProperties();
-                $result["reward"] = JArrayHelper::toObject($properties);
+                $result["reward"] = Joomla\Utilities\ArrayHelper::toObject($properties);
             }
 
-            // Generate data object, based on the intention properties.
-            $properties       = $intention->getProperties();
-            $result["payment_session"] = JArrayHelper::toObject($properties);
+            // Generate data object, based on the payment session properties.
+            $properties       = $paymentSession->getProperties();
+            $result["payment_session"] = Joomla\Utilities\ArrayHelper::toObject($properties);
 
             // DEBUG DATA
             JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_RESULT_DATA"), $this->debugType, $result) : null;
 
-            // Remove intention.
+            // Remove payment session.
             $txnStatus = (isset($result["transaction"]->txn_status)) ? $result["transaction"]->txn_status : null;
-            $this->removeIntention($intention, $txnStatus);
-            unset($intention);
+            $this->closePaymentSession($paymentSession, $txnStatus);
 
         } else {
 
@@ -731,13 +709,13 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
      *
      * @param array  $data
      * @param string $currency
-     * @param object  $intention
+     * @param Crowdfunding\Payment\Session  $paymentSession
      *
      * @return array|null
      */
-    protected function validateData($data, $currency, $intention)
+    protected function validateData($data, $currency, $paymentSession)
     {
-        $txnDate = JArrayHelper::getValue($data, "payment_date");
+        $txnDate = Joomla\Utilities\ArrayHelper::getValue($data, "payment_date");
         $date    = new JDate($txnDate);
 
         // Get additional information from transaction.
@@ -745,15 +723,15 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
         // Prepare transaction data
         $transaction = array(
-            "investor_id"      => (int)$intention->getUserId(),
-            "project_id"       => (int)$intention->getProjectId(),
-            "reward_id"        => ($intention->isAnonymous()) ? 0 : (int)$intention->getRewardId(),
+            "investor_id"      => (int)$paymentSession->getUserId(),
+            "project_id"       => (int)$paymentSession->getProjectId(),
+            "reward_id"        => ($paymentSession->isAnonymous()) ? 0 : (int)$paymentSession->getRewardId(),
             "service_provider" => "PayPal",
-            "txn_id"           => JArrayHelper::getValue($data, "txn_id", "", "string"),
-            "parent_txn_id"    => JArrayHelper::getValue($data, "parent_txn_id", "", "string"),
-            "txn_amount"       => JArrayHelper::getValue($data, "mc_gross", 0, "float"),
-            "txn_currency"     => JArrayHelper::getValue($data, "mc_currency", "", "string"),
-            "txn_status"       => JString::strtolower(JArrayHelper::getValue($data, "payment_status", "", "string")),
+            "txn_id"           => Joomla\Utilities\ArrayHelper::getValue($data, "txn_id", "", "string"),
+            "parent_txn_id"    => Joomla\Utilities\ArrayHelper::getValue($data, "parent_txn_id", "", "string"),
+            "txn_amount"       => Joomla\Utilities\ArrayHelper::getValue($data, "mc_gross", 0, "float"),
+            "txn_currency"     => Joomla\Utilities\ArrayHelper::getValue($data, "mc_currency", "", "string"),
+            "txn_status"       => Joomla\String\String::strtolower(Joomla\Utilities\ArrayHelper::getValue($data, "payment_status", "", "string")),
             "txn_date"         => $date->toSql(),
             "status_reason"    => $this->getStatusReason($data),
             "extra_data"       => $extraData
@@ -787,15 +765,15 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
         // Check receiver
         $allowedReceivers = array(
-            JString::strtolower(JArrayHelper::getValue($data, "business")),
-            JString::strtolower(JArrayHelper::getValue($data, "receiver_email")),
-            JString::strtolower(JArrayHelper::getValue($data, "receiver_id"))
+            Joomla\String\String::strtolower(Joomla\Utilities\ArrayHelper::getValue($data, "business")),
+            Joomla\String\String::strtolower(Joomla\Utilities\ArrayHelper::getValue($data, "receiver_email")),
+            Joomla\String\String::strtolower(Joomla\Utilities\ArrayHelper::getValue($data, "receiver_id"))
         );
 
         if ($this->params->get("paypal_sandbox", 1)) {
-            $receiver = JString::strtolower(JString::trim($this->params->get("paypal_sandbox_business_name")));
+            $receiver = Joomla\String\String::strtolower(Joomla\String\String::trim($this->params->get("paypal_sandbox_business_name")));
         } else {
-            $receiver = JString::strtolower(JString::trim($this->params->get("paypal_business_name")));
+            $receiver = Joomla\String\String::strtolower(Joomla\String\String::trim($this->params->get("paypal_business_name")));
         }
 
         if (!in_array($receiver, $allowedReceivers)) {
@@ -818,7 +796,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
      * Save transaction.
      *
      * @param array     $transactionData
-     * @param CrowdFundingProject $project
+     * @param Crowdfunding\Project $project
      *
      * @return null|array
      */
@@ -838,7 +816,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
                 return null;
             }
 
-            $txnStatus = JArrayHelper::getValue($transactionData, "txn_status");
+            $txnStatus = Joomla\Utilities\ArrayHelper::getValue($transactionData, "txn_status");
 
             switch ($txnStatus) {
 
@@ -862,9 +840,9 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
             // Add funds to the project.
             if ($transaction->isCompleted() or $transaction->isPending()) {
-                $amount = JArrayHelper::getValue($transactionData, "txn_amount");
+                $amount = Joomla\Utilities\ArrayHelper::getValue($transactionData, "txn_amount");
                 $project->addFunds($amount);
-                $project->updateFunds();
+                $project->storeFunds();
             }
 
             // Set transaction ID.
@@ -876,8 +854,8 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
     }
 
     /**
-     * @param CrowdFundingTransaction $transaction
-     * @param CrowdFundingProject $project
+     * @param Crowdfunding\Transaction $transaction
+     * @param Crowdfunding\Project $project
      * @param array $data
      *
      * @return bool
@@ -900,17 +878,17 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $transaction->store();
 
         if (!$projectFunded and ($transaction->isCompleted() or $transaction->isPending())) {
-            $amount = JArrayHelper::getValue($data, "txn_amount");
+            $amount = Joomla\Utilities\ArrayHelper::getValue($data, "txn_amount");
             $project->addFunds($amount);
-            $project->updateFunds();
+            $project->storeFunds();
         }
 
         return true;
     }
 
     /**
-     * @param CrowdFundingTransaction $transaction
-     * @param CrowdFundingProject $project
+     * @param Crowdfunding\Transaction $transaction
+     * @param Crowdfunding\Project $project
      * @param array $data
      *
      * @return bool
@@ -932,9 +910,9 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $transaction->addExtraData($data["extra_data"]);
         $transaction->store();
 
-        $amount = JArrayHelper::getValue($data, "txn_amount");
+        $amount = Joomla\Utilities\ArrayHelper::getValue($data, "txn_amount");
         $project->removeFunds($amount);
-        $project->updateFunds();
+        $project->storeFunds();
 
         return true;
     }
@@ -944,24 +922,23 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
      *
      * @param array $data
      *
-     * @return CrowdFundingTransaction
+     * @return Crowdfunding\Transaction
      */
     protected function getTransaction($data)
     {
         // Prepare keys used for getting transaction from DB.
         if (isset($data["parent_txn_id"])) {
             $keys = array(
-                "txn_id" => JArrayHelper::getValue($data, "parent_txn_id")
+                "txn_id" => Joomla\Utilities\ArrayHelper::getValue($data, "parent_txn_id")
             );
         } else {
             $keys = array(
-                "txn_id" => JArrayHelper::getValue($data, "txn_id")
+                "txn_id" => Joomla\Utilities\ArrayHelper::getValue($data, "txn_id")
             );
         }
 
         // Get transaction by ID
-        jimport("crowdfunding.transaction");
-        $transaction = new CrowdFundingTransaction(JFactory::getDbo());
+        $transaction = new Crowdfunding\Transaction(JFactory::getDbo());
         $transaction->load($keys);
 
         return $transaction;
@@ -969,7 +946,7 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
 
     protected function getDoCheckoutUrl($projectId)
     {
-        $page = JString::trim($this->params->get('docheckout_url'));
+        $page = Joomla\String\String::trim($this->params->get('docheckout_url'));
 
         $uri    = JUri::getInstance();
         $domain = $uri->toString(array("host"));
@@ -989,9 +966,8 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
     protected function prepareLocale(&$html)
     {
         // Get country
-        jimport("crowdfunding.country");
         $countryId = $this->params->get("paypal_country");
-        $country   = new CrowdFundingCountry(JFactory::getDbo());
+        $country   = new Crowdfunding\Country(JFactory::getDbo());
         $country->load($countryId);
 
         $code  = $country->getCode();
@@ -1006,76 +982,28 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
             if (!$buttonUrl) {
 
                 if (strcmp("US", $code) == 0) {
-                    $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/' . $code4 . '/i/btn/' . $button . '.gif" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '">';
+                    $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/' . $code4 . '/i/btn/' . $button . '.gif" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '" />';
                 } else {
-                    $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/' . $code4 . '/' . $code . '/i/btn/' . $button . '.gif" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '">';
+                    $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/' . $code4 . '/' . $code . '/i/btn/' . $button . '.gif" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '" />';
                 }
 
             } else {
-                $html[] = '<input type="image" name="submit" border="0" src="' . $buttonUrl . '" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '">';
+                $html[] = '<input type="image" name="submit" border="0" src="' . $buttonUrl . '" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '" />';
             }
 
         } else { // Default button
 
-            $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/en_US/i/btn/' . $button . '.gif" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '">';
+            $html[] = '<input type="image" name="submit" border="0" src="https://www.paypalobjects.com/en_US/i/btn/' . $button . '.gif" alt="' . JText::_($this->textPrefix . "_BUTTON_ALT") . '" />';
 
         }
 
         // Set locale
         $html[] = '<input type="hidden" name="lc" value="' . $code . '" />';
-
-    }
-
-    /**
-     * Remove an intention record or create a payment session record.
-     *
-     * @param CrowdFundingIntention|CrowdFundingPaymentSession $intention
-     * @param string                                           $txnStatus
-     */
-    protected function removeIntention($intention, $txnStatus)
-    {
-        // If status is NOT completed create a payment session.
-        if (strcmp("completed", $txnStatus) != 0) {
-
-            // If intention object is instance of CrowdFundingIntention,
-            // create a payment session record and remove intention record.
-            // If it is NOT instance of CrowdFundingIntention, do NOT remove the record,
-            // because it will be used again when PayPal sends a response with status "completed".
-            if ($intention instanceof CrowdFundingIntention) {
-
-                jimport("crowdfunding.payment.session");
-                $paymentSession = new CrowdFundingPaymentSession(JFactory::getDbo());
-                $paymentSession
-                    ->setUserId($intention->getUserId())
-                    ->setAnonymousUserId($intention->getAnonymousUserId())
-                    ->setProjectId($intention->getProjectId())
-                    ->setRewardId($intention->getRewardId())
-                    ->setRecordDate($intention->getRecordDate())
-                    ->setGateway($intention->getGateway())
-                    ->setGatewayData($intention->getGatewayData())
-                    ->setIntentionId($intention->getId())
-                    ->setUniqueKey($intention->getUniqueKey())
-                    ->setSessionId($intention->getSessionId());
-
-                $paymentSession->store();
-
-                // DEBUG DATA
-                JDEBUG ? $this->log->add(JText::_($this->textPrefix . "_DEBUG_PAYMENT_SESSION"), $this->debugType, $paymentSession->getProperties()) : null;
-
-                // Remove intention object.
-                $intention->delete();
-            }
-
-            // If transaction status is completed, remove intention record.
-        } elseif (strcmp("completed", $txnStatus) == 0) {
-            $intention->delete();
-        }
-
     }
 
     protected function getStatusReason($data)
     {
-        $pendingReason = JArrayHelper::getValue($data, "pending_reason");
+        $pendingReason = Joomla\Utilities\ArrayHelper::getValue($data, "pending_reason");
         if (!is_null($pendingReason)) {
             return $pendingReason;
         }
@@ -1093,13 +1021,13 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
         $options->set("api.version", 109);
 
         if ($this->params->get("paypal_sandbox", 1)) {
-            $options->set("credentials.username", JString::trim($this->params->get("paypal_sandbox_api_username")));
-            $options->set("credentials.password", JString::trim($this->params->get("paypal_sandbox_api_password")));
-            $options->set("credentials.signature", JString::trim($this->params->get("paypal_sandbox_api_signature")));
+            $options->set("credentials.username", Joomla\String\String::trim($this->params->get("paypal_sandbox_api_username")));
+            $options->set("credentials.password", Joomla\String\String::trim($this->params->get("paypal_sandbox_api_password")));
+            $options->set("credentials.signature", Joomla\String\String::trim($this->params->get("paypal_sandbox_api_signature")));
         } else {
-            $options->set("credentials.username", JString::trim($this->params->get("paypal_api_username")));
-            $options->set("credentials.password", JString::trim($this->params->get("paypal_api_password")));
-            $options->set("credentials.signature", JString::trim($this->params->get("paypal_api_signature")));
+            $options->set("credentials.username", Joomla\String\String::trim($this->params->get("paypal_api_username")));
+            $options->set("credentials.password", Joomla\String\String::trim($this->params->get("paypal_api_password")));
+            $options->set("credentials.signature", Joomla\String\String::trim($this->params->get("paypal_api_signature")));
         }
     }
 
@@ -1111,9 +1039,9 @@ class plgCrowdFundingPaymentPayPalExpress extends CrowdFundingPaymentPlugin
     protected function getApiUrl()
     {
         if ($this->params->get("paypal_sandbox", 1)) {
-            return JString::trim($this->params->get("paypal_sandbox_api_url"));
+            return Joomla\String\String::trim($this->params->get("paypal_sandbox_api_url"));
         } else {
-            return JString::trim($this->params->get("paypal_api_url"));
+            return Joomla\String\String::trim($this->params->get("paypal_api_url"));
         }
     }
 }
