@@ -3,11 +3,11 @@
     <name>PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS</name>
     <author>Todor Iliev</author>
     <copyright>Copyright (C) 2015 Todor Iliev ( ITPrism.com ). All rights reserved.</copyright>
-    <license>http://www.gnu.org/copyleft/gpl.html GNU/GPL</license>
+    <license>http://www.gnu.org/licenses/gpl-3.0.en.html GNU/GPLv3</license>
     <authorEmail>todor@itprism.com</authorEmail>
     <authorUrl>http://itprism.com</authorUrl>
-    <version>2.0</version>
-    <creationDate>30 June, 2015</creationDate>
+    <version>2.1</version>
+    <creationDate>13 November, 2015</creationDate>
     <description><![CDATA[
     <p>Crowdfunding Payment - PayPal Express is a plugin that provides ability for making payments via PayPal Express method.</p>
     <p><a href='http://itprism.com/' target='_blank'>Subscribe for the newsletter</a> to receive information about updates and new ITPrism extensions.</p>
@@ -61,8 +61,8 @@
                 <field name="paypal_api_url" type="text" default="https://api-3t.paypal.com/nvp" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_API_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_PRODUCTION_API_URL_DESC" size="80" class="span6" />
                 <field name="return_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_RETURN_URL_DESC" size="80" class="span6" />
                 <field name="cancel_url" type="text" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_CANCEL_URL_DESC" size="80" class="span6" />
-                <field name="callback_url" type="text" default="index.php?option=com_crowdfunding&amp;task=notifier.notify&amp;format=raw&amp;payment_service=PayPal" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL_DESC" size="80" class="span6" />
-                <field name="docheckout_url" type="text" default="index.php?option=com_crowdfunding&amp;task=payments.docheckout" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL_DESC" size="80" class="span6" />
+                <field name="callback_url" type="text" default="index.php?option=com_crowdfunding&amp;task=notifier.notify&amp;format=raw&amp;payment_service=paypalexpress" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_NOTIFY_URL_DESC" size="80" class="span6" />
+                <field name="docheckout_url" type="text" default="index.php?option=com_crowdfunding&amp;task=payments.doCheckout" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DOCHECKOUT_URL_DESC" size="80" class="span6" />
                 <field name="paypal_image_url" type="text" default="" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_LOGO_URL" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_LOGO_URL_DESC" size="80" class="span6" />
                 <field name="paypal_button_default" type="radio" default="0" label="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DEFAULT_BUTTON" description="PLG_CROWDFUNDINGPAYMENT_PAYPALEXPRESS_DEFAULT_BUTTON_DESC" class="btn-group">
                     <option value="0">JNO</option>
